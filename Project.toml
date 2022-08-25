@@ -1,0 +1,12 @@
+name = "Traces"
+uuid = "5bf43a66-1d3f-4040-9eaa-1cf8e4301601"
+authors = ["lidingxu <lidingx.zz@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SimpleGraphs = "55797a34-41de-5266-9ec1-32ac4eb504d3"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
