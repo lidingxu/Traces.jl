@@ -148,7 +148,7 @@ end
 
 using MetaGraphs, SimpleGraphs, Graphs
 
-function fadjlist(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractGraph}
+function fadjlist(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractSimpleGraph}
     return g.fadjlist
 end
 
@@ -157,7 +157,7 @@ function fadjlist(g::GraphType) where GraphType <: MetaGraphs.AbstractMetaGraph
     return g.graph.fadjlist
 end
 
-function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractGraph, MetaGraphs.AbstractMetaGraph}
+function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractSimpleGraph, MetaGraphs.AbstractMetaGraph}
     num_vertices = nv(g)
     num_edges = ne(g)
 
@@ -165,7 +165,6 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
 
     d = Array{Cint}(undef, num_vertices)
     v = Array{Csize_t}(undef, num_vertices)
-
 
     vi = 0
     vlen = 0
@@ -206,35 +205,57 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
     sparsegraph.vlen = convert(Csize_t, vlen)
     sparsegraph.dlen = convert(Csize_t, dlen)
     sparsegraph.elen = convert(Csize_t, elen)
-    print("\n", d, "\n", v, "\n", e, "\n", sparsegraph, "\n")
+    
 
     return sparsegraph
 end
 
-
+# return a dictionary of sets (orbits) of a SparseGraph 
 function orbits(sparsegraph::SparseGraph, 
                 labelling = nothing::Union{Array{Cint}, Nothing},
                 partition = nothing::Union{Array{Cint}, Nothing})
 
- 
     options =  TracesOptions()
     tracesreturn = traces(sparsegraph, options, labelling, partition)
     orbits = tracesreturn.orbits
     num_vertices = sparsegraph.nv
 
-    orbit_class = Dict{Int, Vector{Int}}()
+    orbit_class = Dict{Int, Set{Int}}()
     for v_ind in 1:num_vertices
         class_ind = orbits[v_ind] + 1 # C to julia index
         if !haskey(orbit_class, class_ind)
-            orbit_class[class_ind] = Vector{Int}()
+            orbit_class[class_ind] = Set{Int}()
             @assert(class_ind == v_ind)
         end
         push!(orbit_class[class_ind], v_ind) 
     end
 
     return orbit_class
-
 end
 
+
+# return array-like labelling, parition of a dictionary of sets (labels)
+function to_label(labels::Dict{Int, Set{Int}})
+    num_vertices = 0
+    for label in values(labels)
+        for v_ind in label
+            num_vertices = num_vertices > v_ind  ? num_vertices : v_ind
+        end
+    end
+    labelling = Array{Cint}(undef, num_vertices)
+    partition = Array{Cint}(undef, num_vertices)
+    ind = 1
+    for label in values(labels)
+        if length(label) != 0
+            for v_ind in label
+                labelling[ind] = convert(Cint, v_ind - 1) # julia to C index
+                partition[ind] = convert(Cint, 1) 
+                ind += 1
+            end
+            partition[ind - 1] = 0 
+        end
+    end
+    return labelling, partition
+end
 
 end
