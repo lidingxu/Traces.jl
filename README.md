@@ -3,9 +3,11 @@
 Simple wrapper for using `traces` of version 27r4, a graph isomorphism package, with `SimpleGraphs`, `Graphs` and `MetaGraphs`,  in Julia. Requires `gcc` and a POSIX style build environment. 
 
 ## installation
+
 ```julia
-pkg.add(")
+pkg.add("https://github.com/lidingxu/Traces.jl.git")
 ```
+
 
 ## Example usage
 
