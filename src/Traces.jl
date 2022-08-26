@@ -216,7 +216,7 @@ function orbits(sparsegraph::SparseGraph,
                 partition = nothing::Union{Array{Cint}, Nothing})
 
     options =  TracesOptions()
-    if labelling != nothing && parition != nothing
+    if labelling != nothing && partition != nothing
         options.defaultptn = 0
     end
     tracesreturn = traces(sparsegraph, options, labelling, partition)
