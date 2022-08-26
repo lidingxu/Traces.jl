@@ -216,6 +216,9 @@ function orbits(sparsegraph::SparseGraph,
                 partition = nothing::Union{Array{Cint}, Nothing})
 
     options =  TracesOptions()
+    if labelling != nothing && parition != nothing
+        options.defaultptn = 0
+    end
     tracesreturn = traces(sparsegraph, options, labelling, partition)
     orbits = tracesreturn.orbits
     num_vertices = sparsegraph.nv
