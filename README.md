@@ -32,7 +32,7 @@ orbits_g = orbits(sp_g)
 ```
 
 
-### API
+## API
 
 Data structures
 * `DEFAULTOPTIONS_TRACES` :  default options
