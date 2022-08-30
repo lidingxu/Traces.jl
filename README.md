@@ -42,7 +42,7 @@ Data structures
 * `tracesreturn`: a struct containing return of traces, i.e., canonocial graph, labels, partition, orbits, stats 
 
 > **Note**:  the index of Julia and `Graph` start at 1, the index of C and `SparseGraph` start at 0. See the [user guide](https://pallini.di.uniroma1.it/Guide.html) of nauty and traces for details about their data structure and function call.
- **Warning**:  be careful of reuse of `SparseGraph` return, because the memory allocated by this data structure may be released.
+ **Warning**:  reuse of `SparseGraph` return may lead to memory leak, because the memory allocated by this data structure may be released.
 
 Interfaces
 * `traces`: a wrapper function call to C function traces via ccall
