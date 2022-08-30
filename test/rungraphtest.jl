@@ -1,5 +1,5 @@
 import Graphs
-import Traces
+using .SymMIP
 
 
 function test_raw()
