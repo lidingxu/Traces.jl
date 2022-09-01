@@ -14,7 +14,7 @@ pkg.add("https://github.com/lidingxu/Traces.jl.git")
 ## Example usage
 
 
-Convert a `Graph` g to a nauty's `SparseGraph` sp_g, and get its canonical labelling (permutation), automophism (generators), orbits:
+Convert a `Graph` g to a nauty's `SparseGraph`, and get its canonical labelling (permutation), automophism (generators), orbits:
 
 ```julia
 using Traces
@@ -43,6 +43,6 @@ Interfaces
 
 Helper methods
 * `to_sparse`: return a `SparseGraph` of `Graphs`, `SimpleGraphs` and `MetaGraphs`
-* `traces`: return readeable orbits, canonocial graph, generators (in cyclic representation), of `Graphs`, `SimpleGraphs` and `MetaGraphs` give labels, parition
+* `traces`: return readeable orbits, canonocial graph, generators (in cyclic representation), of `Graphs`/`SimpleGraphs`.`MetaGraphs` given labels, parition
 
 > **Warning**:  reuse of `SparseGraph` return by `to_sparse` may lead to a memory leak, because the memory allocated for the internal data structure may be released.
