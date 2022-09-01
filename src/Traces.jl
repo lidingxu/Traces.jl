@@ -60,10 +60,10 @@ end
 
 mutable struct SparseGraph
     nde::Csize_t             # /* Number of directed edges (loops contribute only 1) */
-    v::Ptr{Csize_t}          # /* Array of indexes into e[*] */
+    v::Ptr{Csize_t}          # /* Vector of indexes into e[*] */
     nv::Cint                 # /* Number of vertices */
-    d::Ptr{Cint}             # /* Array with out-degree of each vertex */
-    e::Ptr{Cint}             # /* Array to hold lists of neighbours */
+    d::Ptr{Cint}             # /* Vector with out-degree of each vertex */
+    e::Ptr{Cint}             # /* Vector to hold lists of neighbours */
     w::Ptr{Cvoid}            # /* Not implemented, should be NULL. */
     vlen::Csize_t            # /* Sizes of arrays in units of type */
     dlen::Csize_t 
@@ -89,20 +89,20 @@ end
 The canonical graph of the class of isomorphs that g is in. Only meaningful if
 options.getcanon was 1
 
-    generators::Array{Cint}
+    generators::Vector{Cint}
 
 The generators in cyclic representation, -1, termination of a cycle, -2 termination of a permutation. nothing, if called by backend_traces
 
-    labelling::Array{Cint}
+    labelling::Vector{Cint}
 
 if options.getcanon = 1, then this is the vertices of g in the order that they
 should be relabelled to give canonical_graph.
 
-    partition::Array{Cint}
+    partition::Vector{Cint}
 
 colouring information for labels
 
-    orbits::Array{Cint}
+    orbits::Vector{Cint}
 
 Orbits of the automorphism group
 
@@ -112,10 +112,10 @@ stats related to the Traces run
 """
 struct tracesreturn
     canong::SparseGraph
-    generators::Union{Nothing, Array{Cint}}
-    labels::Array{Cint}
-    partition::Array{Cint}
-    orbits::Array{Cint}
+    generators::Union{Nothing, Vector{Cint}}
+    labels::Vector{Cint}
+    partition::Vector{Cint}
+    orbits::Vector{Cint}
     stats::TracesStats
 end
 
@@ -125,8 +125,8 @@ end
 # backend traces call to Traces
 function backend_traces(g::SparseGraph,
     options = DEFAULTOPTIONS_TRACES::TracesOptions,
-    labelling = nothing::Union{Cvoid, Array{Cint}},
-    partition = nothing::Union{Cvoid, Array{Cint}})
+    labelling = nothing::Union{Cvoid, Vector{Cint}},
+    partition = nothing::Union{Cvoid, Vector{Cint}})
 
     stats = TracesStats()
 
@@ -148,7 +148,7 @@ function backend_traces(g::SparseGraph,
     ccall((:Traces, LIB_FILE), Cvoid,
     (Ref{SparseGraph}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, labelling, partition, orbits, options, stats, outgraph)
 
-    generators = Array{Cint}(undef, 0)
+    generators = Vector{Cint}(undef, 0)
     # Return everything nauty gives us.
     return tracesreturn(outgraph, generators, labelling, partition, orbits, stats)
 end
@@ -156,8 +156,8 @@ end
 # backend traces call to Traces_With_Automs
 function backend_traces_with_automs(g::SparseGraph,
     options = DEFAULTOPTIONS_TRACES::TracesOptions,
-    labelling = nothing::Union{Cvoid, Array{Cint}},
-    partition = nothing::Union{Cvoid, Array{Cint}})
+    labelling = nothing::Union{Cvoid, Vector{Cint}},
+    partition = nothing::Union{Cvoid, Vector{Cint}})
 
     stats = TracesStats()
 
@@ -184,15 +184,15 @@ function backend_traces_with_automs(g::SparseGraph,
         (Ref{SparseGraph}, Ref{Csize_t}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, len_generators, labelling, partition, orbits, options, stats, outgraph)
 
         len = getindex(len_generators)
-        unsafe_generators = unsafe_wrap(Array{Cint}, ptr_generators, len, own = false)
+        unsafe_generators = unsafe_wrap(Vector{Cint}, ptr_generators, len, own = false)
 
-        generators = Array{Cint}(unsafe_generators)
+        generators = Vector{Cint}(unsafe_generators)
 
         ccall((:Traces_With_Automs_Free, LIB_FILE), Cvoid, ())
     else
         ccall((:Traces_With_Automs_DEBUG, LIB_FILE), Cvoid,
         (Ref{SparseGraph}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, labelling, partition, orbits, options, stats, outgraph)    
-        generators = Array{Cint}(undef, 0)
+        generators = Vector{Cint}(undef, 0)
     end
 
     # Return everything nauty gives us.
@@ -218,8 +218,8 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
 
     sparsegraph = SparseGraph()
 
-    d = Array{Cint}(undef, num_vertices)
-    v = Array{Csize_t}(undef, num_vertices)
+    d = Vector{Cint}(undef, num_vertices)
+    v = Vector{Csize_t}(undef, num_vertices)
 
     vi = 0
     vlen = 0
@@ -237,7 +237,7 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
     for i in  1:num_vertices 
         nde =  nde > (v[i] + d[i]) ?  nde : (v[i] + d[i]) 
     end
-    e = Array{Cint}(undef, nde)
+    e = Vector{Cint}(undef, nde)
 
  
     elen = 0 
@@ -273,8 +273,8 @@ function to_label(labels::Dict{Int, Set{Int}})
             num_vertices = num_vertices > v_ind  ? num_vertices : v_ind
         end
     end
-    labelling = Array{Cint}(undef, num_vertices)
-    partition = Array{Cint}(undef, num_vertices)
+    labelling = Vector{Cint}(undef, num_vertices)
+    partition = Vector{Cint}(undef, num_vertices)
     ind = 1
     for label in values(labels)
         if length(label) != 0
@@ -323,14 +323,16 @@ function traces(graph::GraphType,
 
     # parse orbits
     orbits = tracesreturn.orbits
-    orbit_class = Dict{Int, Set{Int}}()
+    orbit_map = Dict{Int, Int}()
+    orbit_class = Vector{Set{Int}}(undef, 0)
     for v_ind in 1:num_vertices
         class_ind = orbits[v_ind] + 1 # C to julia index
-        if !haskey(orbit_class, class_ind)
-            orbit_class[class_ind] = Set{Int}()
+        if !haskey(orbit_map, class_ind)
+            push!(orbit_class, Set{Int}())
+            orbit_map[class_ind] = length(orbit_class)
             @assert(class_ind == v_ind)
         end
-        push!(orbit_class[class_ind], v_ind) 
+        push!(orbit_class[orbit_map[class_ind]], v_ind) 
     end
 
     # parse canonical labelling
@@ -346,20 +348,20 @@ function traces(graph::GraphType,
     # parse automorphism
     generators_class = nothing
     if getautoms 
-        generators_class = Array{Array{Array{Int}}}(undef, 0)
+        generators_class = Vector{Vector{Vector{Int}}}(undef, 0)
         generators = tracesreturn.generators
-        perm = Array{Array{Int}}(undef, 0)
-        cycle = Array{Int}(undef, 0)
+        perm = Vector{Vector{Int}}(undef, 0)
+        cycle = Vector{Int}(undef, 0)
         for mv in generators
             mv = convert(Int, mv)
             if mv >= 0
                 push!(cycle, mv + 1)
             elseif mv == -1
                 push!(perm, cycle)
-                cycle = Array{Int}(undef, 0)
+                cycle = Vector{Int}(undef, 0)
             elseif mv == -2
                 push!(generators_class, perm)
-                perm  = Array{Array{Int}}(undef, 0)
+                perm  = Vector{Vector{Int}}(undef, 0)
             end
         end
     end
