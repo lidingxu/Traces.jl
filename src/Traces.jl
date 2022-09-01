@@ -85,8 +85,13 @@ end
 """
     canong::SparseGraph
 
+
 The canonical graph of the class of isomorphs that g is in. Only meaningful if
 options.getcanon was 1
+
+    generators::Array{Cint}
+
+The generators in cyclic representation, -1, termination of a cycle, -2 termination of a permutation. nothing, if called by backend_traces
 
     labelling::Array{Cint}
 
@@ -107,6 +112,7 @@ stats related to the Traces run
 """
 struct tracesreturn
     canong::SparseGraph
+    generators::Union{Nothing, Array{Cint}}
     labels::Array{Cint}
     partition::Array{Cint}
     orbits::Array{Cint}
@@ -114,11 +120,13 @@ struct tracesreturn
 end
 
 
+# backend traces function calls
 
-function traces(g::SparseGraph,
-                options = DEFAULTOPTIONS_TRACES::TracesOptions,
-                labelling = nothing::Union{Cvoid, Array{Cint}},
-                partition = nothing::Union{Cvoid, Array{Cint}})
+# backend traces call to Traces
+function backend_traces(g::SparseGraph,
+    options = DEFAULTOPTIONS_TRACES::TracesOptions,
+    labelling = nothing::Union{Cvoid, Array{Cint}},
+    partition = nothing::Union{Cvoid, Array{Cint}})
 
     stats = TracesStats()
 
@@ -136,14 +144,61 @@ function traces(g::SparseGraph,
     outgraph = SparseGraph()
     orbits = zero(labelling)
 
- 
+
     ccall((:Traces, LIB_FILE), Cvoid,
-          (Ref{SparseGraph}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, labelling, partition, orbits, options, stats, outgraph)
+    (Ref{SparseGraph}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, labelling, partition, orbits, options, stats, outgraph)
+
+    generators = Array{Cint}(undef, 0)
+    # Return everything nauty gives us.
+    return tracesreturn(outgraph, generators, labelling, partition, orbits, stats)
+end
+
+# backend traces call to Traces_With_Automs
+function backend_traces_with_automs(g::SparseGraph,
+    options = DEFAULTOPTIONS_TRACES::TracesOptions,
+    labelling = nothing::Union{Cvoid, Array{Cint}},
+    partition = nothing::Union{Cvoid, Array{Cint}})
+
+    stats = TracesStats()
+
+    # labelling and partition must be defined if defaultptn is not set and must not be defined if they are.
+    @assert (labelling == nothing) == (options.defaultptn == 1)
+    @assert (partition == nothing) == (options.defaultptn == 1)
+
+    # Create some empty arrays for traces
+    if options.defaultptn == 1
+        labelling = zeros(Cint, g.nv)
+        partition = zero(labelling)
+    end
+
+    # These don't need to be zero'd, I'm just doing it for debugging reasons.
+    outgraph = SparseGraph()
+    orbits = zero(labelling)
+
+
+    len_generators = Ref(convert(Csize_t, 0))
+
+    debug = false
+    if !debug
+        ptr_generators = ccall((:Traces_With_Automs, LIB_FILE), Ptr{Cint},
+        (Ref{SparseGraph}, Ref{Csize_t}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, len_generators, labelling, partition, orbits, options, stats, outgraph)
+
+        len = getindex(len_generators)
+        unsafe_generators = unsafe_wrap(Array{Cint}, ptr_generators, len, own = false)
+
+        generators = Array{Cint}(unsafe_generators)
+
+        ccall((:Traces_With_Automs_Free, LIB_FILE), Cvoid, ())
+    else
+        ccall((:Traces_With_Automs_DEBUG, LIB_FILE), Cvoid,
+        (Ref{SparseGraph}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{TracesOptions}, Ref{TracesStats}, Ref{SparseGraph}), g, labelling, partition, orbits, options, stats, outgraph)    
+        generators = Array{Cint}(undef, 0)
+    end
 
     # Return everything nauty gives us.
-    return tracesreturn(outgraph, labelling, partition, orbits, stats)
+    return tracesreturn(outgraph, generators, labelling, partition, orbits, stats)
 end
-            
+
 # helper methods:
 
 using MetaGraphs, SimpleGraphs, Graphs
@@ -210,33 +265,6 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
     return sparsegraph
 end
 
-# return a dictionary of sets (orbits) of a SparseGraph 
-function orbits(sparsegraph::SparseGraph, 
-                labelling = nothing::Union{Array{Cint}, Nothing},
-                partition = nothing::Union{Array{Cint}, Nothing})
-
-    options =  TracesOptions()
-    if labelling != nothing && partition != nothing
-        options.defaultptn = 0
-    end
-    tracesreturn = traces(sparsegraph, options, labelling, partition)
-    orbits = tracesreturn.orbits
-    num_vertices = sparsegraph.nv
-
-    orbit_class = Dict{Int, Set{Int}}()
-    for v_ind in 1:num_vertices
-        class_ind = orbits[v_ind] + 1 # C to julia index
-        if !haskey(orbit_class, class_ind)
-            orbit_class[class_ind] = Set{Int}()
-            @assert(class_ind == v_ind)
-        end
-        push!(orbit_class[class_ind], v_ind) 
-    end
-
-    return orbit_class
-end
-
-
 # return array-like labelling, parition of a dictionary of sets (labels)
 function to_label(labels::Dict{Int, Set{Int}})
     num_vertices = 0
@@ -260,5 +288,84 @@ function to_label(labels::Dict{Int, Set{Int}})
     end
     return labelling, partition
 end
+
+
+# high level wrapper of traces
+function traces(graph::GraphType, 
+                getcanon = false::Bool, # make canonical graph and canonical labelling? 
+                getautoms = false::Bool, # get generators of automorphism group?
+                labels = nothing::Union{Nothing, Dict{Int, Set{Int}}} # a dictionary of sets (labels), if nothing, no initial lables
+                ) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractSimpleGraph, MetaGraphs.AbstractMetaGraph}
+    # to SparseGraph            
+    sparsegraph = to_sparse(graph)
+
+    # set options
+    options =  TracesOptions()
+
+    options.getcanon = convert(Nboolean, getcanon)
+
+    labelling = nothing
+    partition = nothing
+    if labels != nothing
+        options.defaultptn = convert(Cint, 0)
+        labelling, partition = to_label(labels)
+    end
+
+
+    # run traces
+    if getautoms
+        tracesreturn = backend_traces_with_automs(sparsegraph, options, labelling, partition)
+    else
+        tracesreturn = backend_traces(sparsegraph, options, labelling, partition)
+    end
+
+    num_vertices = sparsegraph.nv
+
+    # parse orbits
+    orbits = tracesreturn.orbits
+    orbit_class = Dict{Int, Set{Int}}()
+    for v_ind in 1:num_vertices
+        class_ind = orbits[v_ind] + 1 # C to julia index
+        if !haskey(orbit_class, class_ind)
+            orbit_class[class_ind] = Set{Int}()
+            @assert(class_ind == v_ind)
+        end
+        push!(orbit_class[class_ind], v_ind) 
+    end
+
+    # parse canonical labelling
+    canon_labels = nothing
+    if getcanon
+        labelling = tracesreturn.labelling
+        canon_labels = Vector{Int}(undef, num_vertices)
+        for i in 1:num_vertices
+            canon_labels[i] = convert(Int, labelling[i]) + 1
+        end
+    end
+
+    # parse automorphism
+    generators_class = nothing
+    if getautoms 
+        generators_class = Array{Array{Array{Int}}}(undef, 0)
+        generators = tracesreturn.generators
+        perm = Array{Array{Int}}(undef, 0)
+        cycle = Array{Int}(undef, 0)
+        for mv in generators
+            mv = convert(Int, mv)
+            if mv >= 0
+                push!(cycle, mv + 1)
+            elseif mv == -1
+                push!(perm, cycle)
+                cycle = Array{Int}(undef, 0)
+            elseif mv == -2
+                push!(generators_class, perm)
+                perm  = Array{Array{Int}}(undef, 0)
+            end
+        end
+    end
+
+    return canon_labels, generators_class, orbit_class
+end
+
 
 end

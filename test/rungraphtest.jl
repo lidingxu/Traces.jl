@@ -2,27 +2,7 @@ import Graphs
 import Traces
 
 
-function test_raw()
-    sparse_g = Traces.SparseGraph()
-    sparse_g.nv = 3
-    sparse_g.nde = 4
-    d = Array{Cint}([2,1,1])
-    e = Array{Cint}([1,2,0,0,0,0,0])
-    v = Array{Csize_t}([0, 3, 5])
-    sparse_g.d = pointer(d)
-    sparse_g.e = pointer(e)
-    sparse_g.v = pointer(v)
-    sparse_g.dlen = convert(Csize_t, 5)
-    sparse_g.vlen = convert(Csize_t, 5)
-    sparse_g.elen = convert(Csize_t, 7)
 
-    print(sparse_g, "\n")
-    print(d, "\n", e, "\n", v, "\n")
-    
-    orbit_class = Traces.orbits(sparse_g)
-
-    print(orbit_class, "\n")    
-end
 
 function test_simpleline(n)
     g = Graphs.Graph()
@@ -32,11 +12,9 @@ function test_simpleline(n)
         Graphs.add_edge!(g, i-1, i)
     end
 
-    sparse_g = Traces.to_sparse(g)
+    _, automorphism, orbit_class = Traces.traces(g)
 
-    orbit_class = Traces.orbits(sparse_g)
-
-    print(orbit_class, "\n")
+    print("\n orbit:",orbit_class, "\n")
 end
 
 function test_cluster(n, c)
@@ -51,11 +29,9 @@ function test_cluster(n, c)
         end
     end
 
-    sparse_g = Traces.to_sparse(g)
+    _, automorphism, orbit_class = Traces.traces(g, false, true)
 
-    orbit_class = Traces.orbits(sparse_g)
-
-    print(orbit_class, "\n")
+    print("\n orbit:", orbit_class, "\n autom:", automorphism , "\n")
 end
 
 function test_simple_graph()
@@ -66,5 +42,4 @@ function test_simple_graph()
     test_cluster(100, 30)
 end
 
-test_raw()
 test_simple_graph()
