@@ -265,10 +265,10 @@ function to_sparse(g::GraphType) where GraphType <: Union{SimpleGraphs.AbstractS
     return sparsegraph
 end
 
-# return array-like labelling, parition of a dictionary of sets (labels)
-function to_label(labels::Dict{Int, Set{Int}})
+# return array-like trace style's labelling, parition of a vector of sets (labels)
+function to_label(labels::Vector{Set{Int}})
     num_vertices = 0
-    for label in values(labels)
+    for label in labels
         for v_ind in label
             num_vertices = num_vertices > v_ind  ? num_vertices : v_ind
         end
@@ -276,7 +276,7 @@ function to_label(labels::Dict{Int, Set{Int}})
     labelling = Vector{Cint}(undef, num_vertices)
     partition = Vector{Cint}(undef, num_vertices)
     ind = 1
-    for label in values(labels)
+    for label in labels
         if length(label) != 0
             for v_ind in label
                 labelling[ind] = convert(Cint, v_ind - 1) # julia to C index
@@ -294,7 +294,7 @@ end
 function traces(graph::GraphType, 
                 getcanon = false::Bool, # make canonical graph and canonical labelling? 
                 getautoms = false::Bool, # get generators of automorphism group?
-                labels = nothing::Union{Nothing, Dict{Int, Set{Int}}} # a dictionary of sets (labels), if nothing, no initial lables
+                labels = nothing::Union{Nothing, Vector{Set{Int}}} # a vector of sets (labels), if nothing, no initial lables
                 ) where GraphType <: Union{SimpleGraphs.AbstractSimpleGraph, Graphs.AbstractSimpleGraph, MetaGraphs.AbstractMetaGraph}
     # to SparseGraph            
     sparsegraph = to_sparse(graph)
