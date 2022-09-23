@@ -43,6 +43,6 @@ Interfaces
 
 Helper methods
 * `to_sparse`: return a `SparseGraph` of `Graphs`, `SimpleGraphs` and `MetaGraphs`
-* `traces`: return readeable orbits, canonocial graph, generators (in cyclic representation), of `Graphs`/`SimpleGraphs`.`MetaGraphs` given labels, parition
+* `traces`: return readeable orbits, canonocial graph, generators (in cyclic representation), of `Graphs`/`SimpleGraphs`/`MetaGraphs` for given labels, parition
 
 > **Warning**:  reuse of `SparseGraph` return by `to_sparse` may lead to a memory leak, because the memory allocated for the internal data structure may be released.
