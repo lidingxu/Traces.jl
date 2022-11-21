@@ -1,6 +1,6 @@
 # Traces.jl : Graph canonical labeling and automorphism group computation
 
-Simple wrapper for [`traces`](https://pallini.di.uniroma1.it/) of version 27r4  in Julia. 
+Simple Julia wrapper for [`traces`](https://pallini.di.uniroma1.it/) of version 27r4. 
 
 ## Installation
 Require `gcc` and a POSIX style build environment. 
@@ -14,7 +14,7 @@ pkg.add("https://github.com/lidingxu/Traces.jl.git")
 ## Example usage
 
 
-Convert a `Graph` g to a nauty's `SparseGraph`, and get its canonical labelling (permutation), automophism (generators), orbits:
+Convert a `Graph` g to a nauty's `SparseGraph`, and return its canonical labelling (permutation), automophism (generators), orbits:
 
 ```julia
 using Traces
