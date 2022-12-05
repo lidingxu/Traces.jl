@@ -29,9 +29,9 @@ canon_label, automorphism, orbit_class = Traces.traces(g, true, true)
 
 Data structures
 * `DEFAULTOPTIONS_TRACES` :  default options
-* `TracesOptions` : defaul constructor of options
-* `TracesStats` : defaul constructor of stats
-* `SparseGraph`: defaul constructor of traces' `SparseGraph`
+* `TracesOptions` : default constructor of options
+* `TracesStats` : default constructor of stats
+* `SparseGraph`: default constructor of traces' `SparseGraph`
 * `tracesreturn`: a struct containing return of traces, i.e., canonocial graph, generators, labels, partition, orbits, stats 
 
 > **Note**:  the index of Julia and `Graph` start at 1, the index of C and `SparseGraph` start at 0. See the [user guide](https://pallini.di.uniroma1.it/Guide.html) of nauty and traces for details about their data structure and function call.
